@@ -147,11 +147,12 @@ func (c Config) Validate() error {
 		"go":         true,
 		"python":     true,
 		"rust":       true,
+		"swift":      true,
 	}
 
 	for _, lang := range c.Languages {
 		if !supportedLangs[lang] {
-			return fmt.Errorf("unknown language %q — supported: typescript, go, python, rust", lang)
+			return fmt.Errorf("unknown language %q — supported: typescript, go, python, rust, swift", lang)
 		}
 	}
 

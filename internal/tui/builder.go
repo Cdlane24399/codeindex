@@ -472,7 +472,7 @@ func (b *SymbolTreeBuilder) filePriority(filePath string) int {
 			priority += 100
 		}
 	}
-	if strings.HasSuffix(normalized, "_test.go") || strings.HasSuffix(normalized, "_test.py") || strings.HasSuffix(normalized, "_test.rs") || strings.HasSuffix(normalized, "_test.ts") || strings.HasSuffix(normalized, "_test.tsx") {
+	if strings.HasSuffix(normalized, "_test.go") || strings.HasSuffix(normalized, "_test.py") || strings.HasSuffix(normalized, "_test.rs") || strings.HasSuffix(normalized, "_test.ts") || strings.HasSuffix(normalized, "_test.tsx") || strings.HasSuffix(normalized, "Tests.swift") {
 		priority += 50
 	}
 	return priority

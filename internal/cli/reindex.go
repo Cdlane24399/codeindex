@@ -37,9 +37,9 @@ func init() {
 
 // ReindexResult is the JSON output for reindex.
 type ReindexResult struct {
-	FilesReindexed int                    `json:"files_reindexed"`
-	DurationMs     int64                  `json:"duration_ms"`
-	Files          []indexer.IndexResult  `json:"files"`
+	FilesReindexed int                   `json:"files_reindexed"`
+	DurationMs     int64                 `json:"duration_ms"`
+	Files          []indexer.IndexResult `json:"files"`
 }
 
 func runReindex(cmd *cobra.Command, args []string) error {
@@ -247,11 +247,12 @@ func runWatch(cmd *cobra.Command, dir string, cfg config.Config, store *graph.SQ
 func languageForFile(path string, configuredLanguages []string) string {
 	ext := filepath.Ext(path)
 	langMap := map[string]string{
-		".ts":  "typescript",
-		".tsx": "typescript",
-		".go":  "go",
-		".py":  "python",
-		".rs":  "rust",
+		".ts":    "typescript",
+		".tsx":   "typescript",
+		".go":    "go",
+		".py":    "python",
+		".rs":    "rust",
+		".swift": "swift",
 	}
 
 	lang, ok := langMap[ext]

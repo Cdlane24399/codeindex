@@ -65,25 +65,44 @@ var (
 	rustTraitNameRe  = regexp.MustCompile(`(?:pub\s+)?trait\s+(\w+)`)
 	rustUsePathRe    = regexp.MustCompile(`use\s+([\w:]+)(?:::\{([^}]+)\})?`)
 	rustCallNameRe   = regexp.MustCompile(`^(\w+(?:::\w+)*)\s*(?:::<[^>]*)?\s*\(`)
+
+	// Swift-specific patterns.
+	// In tree-sitter-swift, class/struct/enum/extension share the
+	// class_declaration kind, so discriminate by the leading keyword.
+	swiftFuncNameRe   = regexp.MustCompile(`func\s+(\w+)\s*(?:<[^>]*>)?\s*\(`)
+	swiftClassNameRe  = regexp.MustCompile(`\bclass\s+(\w+)`)
+	swiftStructNameRe = regexp.MustCompile(`\bstruct\s+(\w+)`)
+	swiftEnumNameRe   = regexp.MustCompile(`\benum\s+(\w+)`)
+	swiftActorNameRe  = regexp.MustCompile(`\bactor\s+(\w+)`)
+	swiftExtNameRe    = regexp.MustCompile(`\bextension\s+(\w+)`)
+	swiftProtoNameRe  = regexp.MustCompile(`protocol\s+(\w+)`)
+	swiftImportRe     = regexp.MustCompile(`import\s+(?:\w+\s+)?([\w.]+)`)
+	swiftCallNameRe   = regexp.MustCompile(`^(\w+(?:\.\w+)*)\s*(?:<[^>]*>)?\s*\(`)
 )
 
 // nodeRuleIDs are the rule IDs that produce nodes (symbol definitions).
 var nodeRuleIDs = map[string]bool{
-	"ts-function-def":  true,
-	"ts-class-def":     true,
-	"ts-interface-def": true,
-	"ts-type-def":      true,
-	"go-function-def":  true,
-	"go-method-def":    true,
-	"go-type-decl":     true,
+	"ts-function-def":         true,
+	"ts-class-def":            true,
+	"ts-interface-def":        true,
+	"ts-type-def":             true,
+	"go-function-def":         true,
+	"go-method-def":           true,
+	"go-type-decl":            true,
+	"swift-func-def":          true,
+	"swift-protocol-func-def": true,
+	"swift-class-def":         true,
+	"swift-protocol-def":      true,
 }
 
 // edgeRuleIDs are the rule IDs that produce edges (relationships).
 var edgeRuleIDs = map[string]bool{
-	"ts-import":    true,
-	"ts-call-expr": true,
-	"go-import":    true,
-	"go-call-expr": true,
+	"ts-import":       true,
+	"ts-call-expr":    true,
+	"go-import":       true,
+	"go-call-expr":    true,
+	"swift-import":    true,
+	"swift-call-expr": true,
 }
 
 // ParseMatches converts ast-grep matches into graph nodes and edges.
@@ -204,6 +223,32 @@ func ParseMatches(matches []AstGrepMatch, filePath string, language string) Pars
 
 		case "rust-call-expr":
 			if edge := parseRustCall(m, filePath); edge != nil {
+				result.Edges = append(result.Edges, *edge)
+			}
+
+		// Swift rules.
+		case "swift-func-def", "swift-protocol-func-def":
+			if node := parseSwiftFuncDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "swift-class-def":
+			if node := parseSwiftClassDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "swift-protocol-def":
+			if node := parseSwiftProtocolDef(m, filePath, language); node != nil {
+				result.Nodes = append(result.Nodes, *node)
+			}
+
+		case "swift-import":
+			if edge := parseSwiftImport(m, filePath); edge != nil {
+				result.Edges = append(result.Edges, *edge)
+			}
+
+		case "swift-call-expr":
+			if edge := parseSwiftCall(m, filePath); edge != nil {
 				result.Edges = append(result.Edges, *edge)
 			}
 		}
@@ -1239,6 +1284,153 @@ func isGoBuiltinCall(name string) bool {
 		"real":    true,
 		"imag":    true,
 		"error":   true,
+	}
+	return builtins[name]
+}
+
+// --- Swift parsers ---
+
+// swiftExported reports whether a Swift declaration is externally visible.
+// Swift defaults to internal access; only public and open are exported.
+func swiftExported(text string) bool {
+	return strings.Contains(text, "public ") || strings.Contains(text, "open ")
+}
+
+func parseSwiftFuncDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := swiftFuncNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	return &graph.Node{
+		Name:      match[1],
+		Kind:      "fn",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  swiftExported(m.Text),
+		Language:  language,
+	}
+}
+
+// parseSwiftClassDef handles class_declaration nodes, which in tree-sitter-swift
+// cover class, struct, enum, actor, and extension declarations. The leading
+// keyword discriminates them. Extensions are skipped because they don't define a
+// new symbol (they extend an existing type).
+func parseSwiftClassDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	var name, kind string
+
+	switch {
+	case swiftClassNameRe.MatchString(m.Text):
+		name = swiftClassNameRe.FindStringSubmatch(m.Text)[1]
+		kind = "class"
+	case swiftActorNameRe.MatchString(m.Text):
+		name = swiftActorNameRe.FindStringSubmatch(m.Text)[1]
+		kind = "class"
+	case swiftStructNameRe.MatchString(m.Text):
+		name = swiftStructNameRe.FindStringSubmatch(m.Text)[1]
+		kind = "class"
+	case swiftEnumNameRe.MatchString(m.Text):
+		name = swiftEnumNameRe.FindStringSubmatch(m.Text)[1]
+		kind = "class"
+	default:
+		// extension or unrecognized declaration — not a new symbol.
+		return nil
+	}
+
+	return &graph.Node{
+		Name:      name,
+		Kind:      kind,
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  swiftExported(m.Text),
+		Language:  language,
+	}
+}
+
+func parseSwiftProtocolDef(m AstGrepMatch, filePath string, language string) *graph.Node {
+	match := swiftProtoNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	return &graph.Node{
+		Name:      match[1],
+		Kind:      "interface",
+		FilePath:  filePath,
+		LineStart: m.Range.Start.Line + 1,
+		LineEnd:   m.Range.End.Line + 1,
+		ColStart:  m.Range.Start.Column,
+		ColEnd:    m.Range.End.Column,
+		Exported:  swiftExported(m.Text),
+		Language:  language,
+	}
+}
+
+func parseSwiftImport(m AstGrepMatch, filePath string) *ParsedEdge {
+	match := swiftImportRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	// Swift imports a module path; use the last component as the target name.
+	path := match[1]
+	parts := strings.Split(path, ".")
+	targetName := parts[len(parts)-1]
+	if targetName == "" {
+		return nil
+	}
+
+	return &ParsedEdge{
+		SourceName: "",
+		TargetName: targetName,
+		Kind:       "imports",
+		FilePath:   filePath,
+		Line:       m.Range.Start.Line + 1,
+	}
+}
+
+func parseSwiftCall(m AstGrepMatch, filePath string) *ParsedEdge {
+	match := swiftCallNameRe.FindStringSubmatch(m.Text)
+	if match == nil {
+		return nil
+	}
+
+	calledName := match[1]
+	if isSwiftBuiltinCall(calledName) {
+		return nil
+	}
+
+	return &ParsedEdge{
+		SourceName: "",
+		TargetName: calledName,
+		Kind:       "calls",
+		FilePath:   filePath,
+		Line:       m.Range.Start.Line + 1,
+	}
+}
+
+// isSwiftBuiltinCall returns true for Swift built-in/standard calls that
+// shouldn't be recorded as edges.
+func isSwiftBuiltinCall(name string) bool {
+	builtins := map[string]bool{
+		"print":            true,
+		"println":          true,
+		"debugPrint":       true,
+		"assert":           true,
+		"assertionFailure": true,
+		"precondition":     true,
+		"fatalError":       true,
+		"min":              true,
+		"max":              true,
+		"abs":              true,
+		"swap":             true,
+		"type":             true,
 	}
 	return builtins[name]
 }
