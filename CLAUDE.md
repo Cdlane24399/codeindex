@@ -33,7 +33,7 @@ A persistent structural knowledge graph for codebases. Parses symbols and relati
 
 ## Supported languages
 
-TypeScript/JavaScript (`package.json`, `tsconfig.json`), Go (`go.mod`), Python (`pyproject.toml`, `setup.py`), Rust (`Cargo.toml`)
+TypeScript/JavaScript (`package.json`, `tsconfig.json`), Go (`go.mod`), Python (`pyproject.toml`, `setup.py`), Rust (`Cargo.toml`), Swift (`Package.swift`)
 
 ## Commands
 

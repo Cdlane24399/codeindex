@@ -29,7 +29,7 @@ internal/
   hash/                 SHA-256 content hashing for staleness
   benchmark/            benchmark runner
   testutil/             shared test helpers
-testdata/               fixture repos (ts-project, go-project, py-project, rust-project)
+testdata/               fixture repos (ts-project, go-project, py-project, rust-project, swift-project)
 skills/                 agent skill files (Claude Code, Cursor, Codex)
 npm/                    npx thin wrapper
 Formula/                Homebrew formula
@@ -54,7 +54,7 @@ Formula/                Homebrew formula
 
 ## Supported languages
 
-TypeScript/JavaScript (`package.json`, `tsconfig.json`), Go (`go.mod`), Python (`pyproject.toml`, `setup.py`), Rust (`Cargo.toml`)
+TypeScript/JavaScript (`package.json`, `tsconfig.json`), Go (`go.mod`), Python (`pyproject.toml`, `setup.py`), Rust (`Cargo.toml`), Swift (`Package.swift`)
 
 ## Commands
 
