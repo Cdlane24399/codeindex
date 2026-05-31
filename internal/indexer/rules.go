@@ -123,10 +123,45 @@ language: Rust
 rule:
   kind: call_expression`
 
+// SwiftRules is the inline rules YAML for Swift symbol extraction.
+// In tree-sitter-swift, class/struct/enum/extension declarations all share the
+// class_declaration kind, so the parser discriminates them by their leading
+// keyword. protocol_declaration is matched separately.
+const SwiftRules = `id: swift-func-def
+language: Swift
+rule:
+  kind: function_declaration
+---
+id: swift-protocol-func-def
+language: Swift
+rule:
+  kind: protocol_function_declaration
+---
+id: swift-class-def
+language: Swift
+rule:
+  kind: class_declaration
+---
+id: swift-protocol-def
+language: Swift
+rule:
+  kind: protocol_declaration
+---
+id: swift-import
+language: Swift
+rule:
+  kind: import_declaration
+---
+id: swift-call-expr
+language: Swift
+rule:
+  kind: call_expression`
+
 // LanguageRules maps language names to their inline rule strings.
 var LanguageRules = map[string]string{
 	"typescript": TypeScriptRules,
 	"go":         GoRules,
 	"python":     PythonRules,
 	"rust":       RustRules,
+	"swift":      SwiftRules,
 }

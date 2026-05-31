@@ -20,7 +20,7 @@ var initCmd = &cobra.Command{
 	Long: `Auto-detect languages from project markers and create .codeindex.yaml.
 
 Detects: package.json/tsconfig.json → typescript, go.mod → go,
-         pyproject.toml → python, Cargo.toml → rust
+         pyproject.toml → python, Cargo.toml → rust, Package.swift → swift
 
 Examples:
   codeindex init          # interactive

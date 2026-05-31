@@ -15,12 +15,13 @@ type DetectionResult struct {
 // and returns detected languages.
 func DetectLanguages(dir string) ([]DetectionResult, error) {
 	markers := map[string]string{
-		"package.json":    "typescript",
-		"tsconfig.json":   "typescript",
-		"go.mod":          "go",
-		"pyproject.toml":  "python",
-		"setup.py":        "python",
-		"Cargo.toml":      "rust",
+		"package.json":   "typescript",
+		"tsconfig.json":  "typescript",
+		"go.mod":         "go",
+		"pyproject.toml": "python",
+		"setup.py":       "python",
+		"Cargo.toml":     "rust",
+		"Package.swift":  "swift",
 	}
 
 	seen := map[string]bool{}

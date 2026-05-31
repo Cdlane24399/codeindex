@@ -67,6 +67,7 @@ codeindex query subgraph handleRequest --depth 2
 | Go | `go.mod` |
 | Python | `pyproject.toml`, `setup.py` |
 | Rust | `Cargo.toml` |
+| Swift | `Package.swift` |
 
 ---
 

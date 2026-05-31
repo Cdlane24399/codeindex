@@ -1,0 +1,43 @@
+# ast-grep YAML rules for Swift symbol extraction.
+
+# Function definitions
+- id: sw-function-def
+  language: Swift
+  rule:
+    kind: function_declaration
+  message: function definition
+
+# Protocol method requirements
+- id: sw-protocol-function-def
+  language: Swift
+  rule:
+    kind: protocol_function_declaration
+  message: protocol function requirement
+
+# Class / struct / enum / extension declarations (share class_declaration kind)
+- id: sw-class-def
+  language: Swift
+  rule:
+    kind: class_declaration
+  message: class/struct/enum/extension declaration
+
+# Protocol definitions
+- id: sw-protocol-def
+  language: Swift
+  rule:
+    kind: protocol_declaration
+  message: protocol definition
+
+# Import declarations
+- id: sw-import
+  language: Swift
+  rule:
+    kind: import_declaration
+  message: import declaration
+
+# Function calls
+- id: sw-call-expr
+  language: Swift
+  rule:
+    kind: call_expression
+  message: function call

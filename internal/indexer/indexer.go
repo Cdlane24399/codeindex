@@ -409,6 +409,8 @@ func LanguageExtensions(language string) []string {
 		return []string{".py"}
 	case "rust":
 		return []string{".rs"}
+	case "swift":
+		return []string{".swift"}
 	default:
 		return nil
 	}
@@ -422,7 +424,7 @@ func isIgnoredDir(name string) bool {
 		".git":         true,
 		"dist":         true,
 		"build":        true,
-		".codeindex":  true,
+		".codeindex":   true,
 		"__pycache__":  true,
 		"target":       true,
 	}
